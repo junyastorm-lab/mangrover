@@ -1,16 +1,15 @@
-bash
-
-cat /mnt/user-data/outputs/mangrover-supabase.html
-出力
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MANGROVER — Impact Platform</title>
-<!-- Supabase JS SDK -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- Leaflet map -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap');
   :root {
@@ -149,6 +148,24 @@ cat /mnt/user-data/outputs/mangrover-supabase.html
   /* EMPTY */
   .empty{text-align:center;padding:32px;color:var(--text-3);font-size:14px}
 
+  /* MAP */
+  #plantingMap{height:420px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+  #globalMap{height:520px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
+  .map-legend{display:flex;gap:20px;margin-top:12px;flex-wrap:wrap;font-size:12px;color:var(--text-2)}
+  .map-legend-item{display:flex;align-items:center;gap:6px}
+  .legend-dot{width:12px;height:12px;border-radius:50%}
+
+  /* CHARTS */
+  .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+  .chart-card{background:var(--white);border-radius:var(--radius-lg);border:1px solid var(--border);padding:20px 24px}
+  .chart-title{font-size:13px;font-weight:600;color:var(--text-2);letter-spacing:.05em;text-transform:uppercase;margin-bottom:16px}
+  .chart-wrap{position:relative;height:240px}
+
+  /* MAP PAGE */
+  .map-filter-row{display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center}
+  .map-filter-btn{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:var(--white);font-size:12px;font-weight:500;cursor:pointer;color:var(--text-2);transition:all .15s}
+  .map-filter-btn.active{border-color:var(--green-mid);background:var(--green-light);color:var(--green-deep)}
+
   @media(max-width:640px){
     .stat-grid{grid-template-columns:1fr 1fr}
     .admin-grid{grid-template-columns:1fr}
@@ -156,6 +173,7 @@ cat /mnt/user-data/outputs/mangrover-supabase.html
     .photo-grid{grid-template-columns:repeat(2,1fr)}
     .profile-hero{flex-direction:column;text-align:center}
     .nav-tabs{display:none}
+    .charts-grid{grid-template-columns:1fr}
   }
 </style>
 </head>
@@ -213,6 +231,29 @@ cat /mnt/user-data/outputs/mangrover-supabase.html
   <div class="main">
     <div id="profileHero" class="profile-hero"></div>
     <div id="profileStats" class="stat-grid"></div>
+
+    <!-- CHARTS -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <div class="chart-title">🌱 Trees Planted Over Time</div>
+        <div class="chart-wrap"><canvas id="chartTrees"></canvas></div>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">🌫️ Cumulative CO₂ Absorbed (kg)</div>
+        <div class="chart-wrap"><canvas id="chartCO2"></canvas></div>
+      </div>
+    </div>
+
+    <!-- MAP -->
+    <div class="section-card">
+      <div class="section-title">🗺️ Planting Map</div>
+      <div id="plantingMap"></div>
+      <div class="map-legend">
+        <div class="map-legend-item"><div class="legend-dot" style="background:#1D9E75"></div>Planting site</div>
+        <div class="map-legend-item" style="color:var(--text-3);font-style:italic">Click a marker for details</div>
+      </div>
+    </div>
+
     <div class="section-card">
       <div class="section-title">🌱 Planting History</div>
       <div id="plantingLog"><div class="empty">No planting records yet.</div></div>
@@ -235,6 +276,25 @@ cat /mnt/user-data/outputs/mangrover-supabase.html
         <button class="btn-share" onclick="showToast('📄 Certificate feature coming soon!')">📄 Certificate PDF</button>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- ===== GLOBAL MAP PAGE ===== -->
+<div class="page" id="page-map">
+  <div class="main">
+    <div class="page-title">🗺️ Global Planting Map</div>
+    <div class="page-sub">All verified mangrove planting sites — GPS confirmed from Cambodia.</div>
+    <div class="map-filter-row">
+      <span style="font-size:12px;font-weight:600;color:var(--text-2)">Filter:</span>
+      <button class="map-filter-btn active" onclick="filterMapBy('all',this)">All Partners</button>
+      <button class="map-filter-btn" id="mapFilterOwn" onclick="filterMapBy('own',this)" style="display:none">My Sites Only</button>
+    </div>
+    <div id="globalMap"></div>
+    <div class="map-legend" style="margin-top:16px">
+      <div class="map-legend-item"><div class="legend-dot" style="background:#1D9E75"></div>Planting site (size = tree count)</div>
+    </div>
+    <!-- Global stats under the map -->
+    <div class="stat-grid" style="margin-top:20px" id="mapStats"></div>
   </div>
 </div>
 
@@ -327,12 +387,10 @@ cat /mnt/user-data/outputs/mangrover-supabase.html
 
 <script>
 // ============================================================
-// ⚙️  CONFIGURATION — ここを自分のキーに書き換えてください
+// ⚙️  CONFIGURATION
 // ============================================================
-const SUPABASE_URL  = 'https://rcvdsnpvjmwpsuuaqkfk.supabase.co';   // 例: https://abcdefgh.supabase.co
-const SUPABASE_KEY  = 'sb_publishable_a693zb6OxRHtUv5F0GYrdw_4HIDIcPs'; // Supabase > Settings > API > anon key
-
-// Admin と Field チームのメールアドレス（Supabaseで先にユーザー作成してください）
+const SUPABASE_URL  = 'https://rcvdsnpvjmwpsuuaqkfk.supabase.co';
+const SUPABASE_KEY  = 'sb_publishable_a693zb6OxRHtUv5F0GYrdw_4HIDIcPs';
 const ADMIN_EMAILS  = ['junya.storm@gmail.com'];
 const FIELD_EMAILS  = ['field@mangrover.earth'];
 // ============================================================
@@ -340,14 +398,20 @@ const FIELD_EMAILS  = ['field@mangrover.earth'];
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 const BADGE_COLORS = { Bronze:'badge-bronze', Silver:'badge-silver', Gold:'badge-gold', Platinum:'badge-platinum' };
 const RANK_THRESHOLDS = [
-  { name:'Bronze', min:0,   max:49  },
-  { name:'Silver', min:50,  max:149 },
-  { name:'Gold',   min:150, max:299 },
+  { name:'Bronze',   min:0,   max:49   },
+  { name:'Silver',   min:50,  max:149  },
+  { name:'Gold',     min:150, max:299  },
   { name:'Platinum', min:300, max:9999 }
 ];
 let currentUser = null;
 let currentRole = 'partner';
 let allPartners  = [];
+let _profileLogs = [];   // cached logs for current profile
+let _chartTrees  = null;
+let _chartCO2    = null;
+let _leafletProfile = null;
+let _leafletGlobal  = null;
+let _allLogs = [];       // all planting_logs for global map
 
 // ── UTILS ─────────────────────────────────────────────────
 function showToast(msg) {
@@ -369,6 +433,20 @@ function rankFor(trees) {
 }
 function loading(show) {
   document.getElementById('loadingScreen').style.display = show ? 'flex' : 'none';
+}
+
+// Parse GPS string like "11.0167°N, 103.1667°E" or "11.0167, 103.1667"
+function parseGPS(str) {
+  if (!str) return null;
+  const clean = str.replace(/[°NSEW]/gi, ' ').replace(/,/g, ' ');
+  const nums = clean.match(/-?\d+(\.\d+)?/g);
+  if (!nums || nums.length < 2) return null;
+  let lat = parseFloat(nums[0]);
+  let lng = parseFloat(nums[1]);
+  if (str.toUpperCase().includes('S')) lat = -lat;
+  if (str.toUpperCase().includes('W')) lng = -lng;
+  if (Math.abs(lat) > 90 || Math.abs(lng) > 180) return null;
+  return [lat, lng];
 }
 
 // ── INIT ──────────────────────────────────────────────────
@@ -429,6 +507,7 @@ async function afterLogin(user) {
   if (ADMIN_EMAILS.includes(email)) {
     currentRole = 'admin';
     await loadAdmin();
+    await loadAllLogs();
     showPage('admin');
   } else if (FIELD_EMAILS.includes(email)) {
     currentRole = 'field';
@@ -444,6 +523,7 @@ async function afterLogin(user) {
       return;
     }
     await loadProfile(partner);
+    await loadAllLogs();
     showPage('profile');
   }
 
@@ -455,9 +535,16 @@ async function afterLogin(user) {
 // ── NAV ───────────────────────────────────────────────────
 function buildNav() {
   const tabs = {
-    partner: [{ id:'profile', label:'My Impact Profile' }],
-    admin:   [{ id:'admin', label:'Partners' }, { id:'field', label:'Field Reports' }],
-    field:   [{ id:'field', label:'Submit Report' }]
+    partner: [
+      { id:'profile', label:'My Impact' },
+      { id:'map',     label:'🗺️ Map' }
+    ],
+    admin: [
+      { id:'admin',   label:'Partners' },
+      { id:'map',     label:'🗺️ Map' },
+      { id:'field',   label:'Field Reports' }
+    ],
+    field: [{ id:'field', label:'Submit Report' }]
   };
   document.getElementById('navTabs').innerHTML = (tabs[currentRole]||[]).map(t =>
     `<button class="nav-tab" onclick="showPage('${t.id}')">${t.label}</button>`
@@ -467,6 +554,10 @@ function buildNav() {
     `<div class="nav-avatar">${init}</div>
      <span style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${currentUser.email}</span>
      <button onclick="doLogout()" style="background:none;border:none;color:rgba(255,255,255,.5);cursor:pointer;font-size:12px">Sign out</button>`;
+
+  // Show "My Sites Only" filter button for partners
+  const ownBtn = document.getElementById('mapFilterOwn');
+  if (ownBtn) ownBtn.style.display = currentRole === 'partner' ? 'inline-block' : 'none';
 }
 
 async function doLogout() {
@@ -479,9 +570,14 @@ function showPage(id) {
   document.querySelectorAll('.nav-tab').forEach(t => {
     t.classList.toggle('active', t.onclick?.toString().includes(`'${id}'`));
   });
+
+  // Initialize map lazily when page is shown
+  if (id === 'map') {
+    setTimeout(() => initGlobalMap(), 50);
+  }
 }
 
-// ── FETCH PARTNER ─────────────────────────────────────────
+// ── FETCH ─────────────────────────────────────────────────
 async function fetchPartner(email) {
   const { data, error } = await sb.from('partners').select('*').eq('email', email).single();
   if (error) return null;
@@ -490,19 +586,24 @@ async function fetchPartner(email) {
 
 async function fetchLogs(email) {
   const { data } = await sb.from('planting_logs')
-    .select('*').eq('partner_email', email).order('planted_date', { ascending: false });
+    .select('*').eq('partner_email', email).order('planted_date', { ascending: true });
   return data || [];
+}
+
+async function loadAllLogs() {
+  const { data } = await sb.from('planting_logs')
+    .select('*').order('planted_date', { ascending: true });
+  _allLogs = data || [];
 }
 
 // ── PROFILE ───────────────────────────────────────────────
 async function loadProfile(p) {
   const logs = await fetchLogs(p.email);
+  _profileLogs = logs;
 
-  // Recompute trees from logs
   const totalTrees = logs.reduce((s, l) => s + (l.trees_count || 0), 0);
   const rank = rankFor(totalTrees);
 
-  // Hero
   const init = p.name.split(' ').map(w => w[0]).join('').slice(0,2);
   document.getElementById('profileHero').innerHTML = `
     <div class="profile-avatar-lg">${init}</div>
@@ -515,7 +616,6 @@ async function loadProfile(p) {
       </div>
     </div>`;
 
-  // Stats
   const co2 = (totalTrees * 13).toLocaleString();
   document.getElementById('profileStats').innerHTML = `
     <div class="stat-card"><div class="stat-unit">trees planted</div><div class="stat-val">${totalTrees}</div><div class="stat-label">Cambodia</div></div>
@@ -523,12 +623,16 @@ async function loadProfile(p) {
     <div class="stat-card"><div class="stat-unit">years active</div><div class="stat-val">${p.years_active||1}</div><div class="stat-label">Continuous</div></div>
     <div class="stat-card"><div class="stat-unit">partner rank</div><div class="stat-val" style="font-size:20px">${rank.name}</div><div class="stat-label">${p.plan} Plan</div></div>`;
 
-  // Logs
+  renderCharts(logs);
+  setTimeout(() => initProfileMap(logs), 50);
+
   if (logs.length === 0) {
     document.getElementById('plantingLog').innerHTML = '<div class="empty">🌱 Your first planting is on its way from Cambodia!</div>';
   } else {
     const emojis = ['🦀','🐠','🌊','🌱','🐦','🌴','🦎','🌿'];
-    document.getElementById('plantingLog').innerHTML = logs.map((l, i) => `
+    // Show most recent first in history list
+    const logsDesc = [...logs].reverse();
+    document.getElementById('plantingLog').innerHTML = logsDesc.map((l, i) => `
       <div class="log-item">
         <div class="log-dot"></div>
         <div class="log-date">${fmtDate(l.planted_date)}</div>
@@ -541,7 +645,6 @@ async function loadProfile(p) {
       </div>`).join('');
   }
 
-  // Photos — show placeholder thumbs (real photos via Supabase Storage in prod)
   const emojis2 = ['🌿','🦀','🐠','🌊','🌱','🐦','🌴','🦎'];
   document.getElementById('photoGrid').innerHTML = logs.slice(0,8).map((l, i) => {
     if (l.photo_urls && l.photo_urls.length > 0) {
@@ -550,7 +653,6 @@ async function loadProfile(p) {
     return `<div class="photo-thumb">${emojis2[i % emojis2.length]}</div>`;
   }).join('') || '<div class="empty" style="grid-column:1/-1">Photos will appear after your first planting report.</div>';
 
-  // Progress
   const next = RANK_THRESHOLDS[RANK_THRESHOLDS.indexOf(rank) + 1];
   const pct = next ? Math.round(((totalTrees - rank.min) / (next.min - rank.min)) * 100) : 100;
   document.getElementById('progressWrap').innerHTML = `
@@ -561,13 +663,207 @@ async function loadProfile(p) {
     <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(pct,100)}%"></div></div>
     ${next ? `<div style="font-size:12px;color:var(--text-2);margin-top:6px">Plant <strong>${next.min - totalTrees} more trees</strong> to reach ${next.name}.</div>` : ''}`;
 
-  // Public URL
   const slug = p.profile_slug || p.email.split('@')[0];
   const publicUrl = `${location.origin}/profile/${slug}`;
   document.getElementById('publicUrl').innerHTML =
     `<span>${publicUrl}</span>
      <button class="btn-sm" onclick="copyText('${publicUrl}')">Copy</button>`;
   window._publicUrl = publicUrl;
+}
+
+// ── CHARTS ────────────────────────────────────────────────
+function renderCharts(logs) {
+  if (!logs || logs.length === 0) return;
+
+  // Build monthly data (ascending by date)
+  const sorted = [...logs].sort((a,b) => a.planted_date.localeCompare(b.planted_date));
+  const labels = sorted.map(l => fmtDate(l.planted_date));
+  const treeCounts = sorted.map(l => l.trees_count || 0);
+
+  // Cumulative CO2 (13 kg CO2/tree/year absorbed)
+  let cumTrees = 0;
+  const cumCO2 = sorted.map(l => { cumTrees += (l.trees_count || 0); return cumTrees * 13; });
+
+  const chartDefaults = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: '#E2EDE9' }, ticks: { font: { size: 11 }, color: '#999' } },
+      y: { grid: { color: '#E2EDE9' }, ticks: { font: { size: 11 }, color: '#999' }, beginAtZero: true }
+    }
+  };
+
+  // Trees chart
+  if (_chartTrees) _chartTrees.destroy();
+  _chartTrees = new Chart(document.getElementById('chartTrees'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: treeCounts,
+        backgroundColor: '#1D9E75',
+        borderRadius: 4,
+        borderSkipped: false
+      }]
+    },
+    options: { ...chartDefaults }
+  });
+
+  // CO2 cumulative line chart
+  if (_chartCO2) _chartCO2.destroy();
+  _chartCO2 = new Chart(document.getElementById('chartCO2'), {
+    type: 'line',
+    data: {
+      labels,
+      datasets: [{
+        data: cumCO2,
+        borderColor: '#0A5447',
+        backgroundColor: 'rgba(10,84,71,0.08)',
+        borderWidth: 2.5,
+        pointBackgroundColor: '#1D9E75',
+        pointRadius: 4,
+        fill: true,
+        tension: 0.35
+      }]
+    },
+    options: {
+      ...chartDefaults,
+      plugins: {
+        ...chartDefaults.plugins,
+        tooltip: {
+          callbacks: {
+            label: ctx => `${ctx.parsed.y.toLocaleString()} kg CO₂`
+          }
+        }
+      }
+    }
+  });
+}
+
+// ── PROFILE MAP ───────────────────────────────────────────
+function initProfileMap(logs) {
+  const el = document.getElementById('plantingMap');
+  if (!el) return;
+
+  if (_leafletProfile) { _leafletProfile.remove(); _leafletProfile = null; }
+
+  _leafletProfile = L.map('plantingMap', { zoomControl: true });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 18
+  }).addTo(_leafletProfile);
+
+  const points = [];
+  logs.forEach(l => {
+    const coords = parseGPS(l.gps);
+    if (!coords) return;
+    points.push(coords);
+
+    const radius = Math.max(8, Math.min(28, Math.sqrt(l.trees_count || 1) * 2.5));
+    L.circleMarker(coords, {
+      radius,
+      fillColor: '#1D9E75',
+      color: '#0A5447',
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.75
+    }).bindPopup(`
+      <div style="font-family:Inter,sans-serif;min-width:160px">
+        <div style="font-weight:600;margin-bottom:4px">${l.location_name || 'Cambodia'}</div>
+        <div style="font-size:12px;color:#5A5A5A">${fmtDate(l.planted_date)}</div>
+        <div style="font-size:13px;font-weight:600;color:#1D9E75;margin-top:6px">🌿 ${l.trees_count} trees</div>
+        <div style="font-size:11px;color:#1D9E75;margin-top:2px">CO₂: ${((l.trees_count||0)*13).toLocaleString()} kg/yr</div>
+        ${l.field_note ? `<div style="font-size:12px;margin-top:6px;color:#5A5A5A">${l.field_note}</div>` : ''}
+      </div>
+    `).addTo(_leafletProfile);
+  });
+
+  if (points.length > 0) {
+    _leafletProfile.fitBounds(L.latLngBounds(points).pad(0.3));
+  } else {
+    // Default to Cambodia
+    _leafletProfile.setView([11.55, 104.92], 6);
+  }
+}
+
+// ── GLOBAL MAP ────────────────────────────────────────────
+let _globalMapFilter = 'all';
+
+function initGlobalMap() {
+  const el = document.getElementById('globalMap');
+  if (!el) return;
+
+  if (_leafletGlobal) { _leafletGlobal.remove(); _leafletGlobal = null; }
+
+  _leafletGlobal = L.map('globalMap', { zoomControl: true });
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap contributors',
+    maxZoom: 18
+  }).addTo(_leafletGlobal);
+
+  renderGlobalMapMarkers();
+
+  // Stats
+  const totalTrees = _allLogs.reduce((s, l) => s + (l.trees_count || 0), 0);
+  const totalCO2   = totalTrees * 13;
+  const sites      = _allLogs.filter(l => parseGPS(l.gps)).length;
+  const partners   = new Set(_allLogs.map(l => l.partner_email)).size;
+  document.getElementById('mapStats').innerHTML = `
+    <div class="stat-card"><div class="stat-unit">total trees</div><div class="stat-val">${totalTrees.toLocaleString()}</div><div class="stat-label">All Partners</div></div>
+    <div class="stat-card"><div class="stat-unit">kg CO₂/year</div><div class="stat-val">${(totalCO2).toLocaleString()}</div><div class="stat-label">Total Absorbed</div></div>
+    <div class="stat-card"><div class="stat-unit">GPS sites</div><div class="stat-val">${sites}</div><div class="stat-label">Verified</div></div>
+    <div class="stat-card"><div class="stat-unit">partners</div><div class="stat-val">${partners}</div><div class="stat-label">Active</div></div>`;
+}
+
+function renderGlobalMapMarkers() {
+  if (!_leafletGlobal) return;
+
+  // Remove existing markers
+  _leafletGlobal.eachLayer(l => { if (l instanceof L.CircleMarker) _leafletGlobal.removeLayer(l); });
+
+  const logsToShow = _globalMapFilter === 'own' && currentUser
+    ? _allLogs.filter(l => l.partner_email === currentUser.email)
+    : _allLogs;
+
+  const points = [];
+  logsToShow.forEach(l => {
+    const coords = parseGPS(l.gps);
+    if (!coords) return;
+    points.push(coords);
+    const radius = Math.max(8, Math.min(32, Math.sqrt(l.trees_count || 1) * 3));
+    const isOwn = currentUser && l.partner_email === currentUser.email;
+    L.circleMarker(coords, {
+      radius,
+      fillColor: isOwn ? '#0A5447' : '#1D9E75',
+      color: '#fff',
+      weight: 2,
+      opacity: 1,
+      fillOpacity: 0.8
+    }).bindPopup(`
+      <div style="font-family:Inter,sans-serif;min-width:180px">
+        <div style="font-weight:600;margin-bottom:2px">${l.location_name || 'Cambodia'}</div>
+        <div style="font-size:11px;color:#999">${l.partner_email}</div>
+        <div style="font-size:12px;color:#5A5A5A;margin-top:4px">${fmtDate(l.planted_date)}</div>
+        <div style="font-size:13px;font-weight:600;color:#1D9E75;margin-top:6px">🌿 ${l.trees_count} trees</div>
+        <div style="font-size:11px;color:#1D9E75">CO₂: ${((l.trees_count||0)*13).toLocaleString()} kg/yr</div>
+        ${l.field_note ? `<div style="font-size:12px;margin-top:6px;color:#5A5A5A">${l.field_note}</div>` : ''}
+      </div>
+    `).addTo(_leafletGlobal);
+  });
+
+  if (points.length > 0) {
+    _leafletGlobal.fitBounds(L.latLngBounds(points).pad(0.4));
+  } else {
+    _leafletGlobal.setView([11.55, 104.92], 6);
+  }
+}
+
+function filterMapBy(mode, btn) {
+  _globalMapFilter = mode;
+  document.querySelectorAll('.map-filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderGlobalMapMarkers();
 }
 
 // ── ADMIN ─────────────────────────────────────────────────
@@ -595,7 +891,6 @@ async function loadAdmin() {
         </td>
       </tr>`).join('');
 
-  // populate field partner select
   const sel = document.getElementById('fieldPartnerEmail');
   if (sel) sel.innerHTML = allPartners.map(p => `<option value="${p.email}">${p.name} (${p.email})</option>`).join('');
 }
@@ -610,7 +905,6 @@ async function addPartner() {
   const btn = document.getElementById('addPartnerBtn');
   btn.disabled = true; btn.textContent = 'Creating...';
 
-  // 1. Create Supabase Auth user (requires service role in prod — here uses signUp)
   const { data: authData, error: authErr } = await sb.auth.signUp({ email, password });
   if (authErr && !authErr.message.includes('already')) {
     showToast('❌ Auth error: ' + authErr.message);
@@ -618,7 +912,6 @@ async function addPartner() {
     return;
   }
 
-  // 2. Insert partner record
   const slug = name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
   const { error: dbErr } = await sb.from('partners').upsert({
     name, email, plan,
@@ -668,7 +961,6 @@ async function submitField() {
   btn.disabled = true;
   document.getElementById('fieldBtnText').textContent = 'Submitting...';
 
-  // Insert planting log
   const { error: logErr } = await sb.from('planting_logs').insert({
     partner_email: email,
     planted_date: date,
@@ -685,7 +977,6 @@ async function submitField() {
     return;
   }
 
-  // Update partner's total_trees
   const partner = await fetchPartner(email);
   if (partner) {
     const newTotal = (partner.total_trees || 0) + trees;
@@ -719,4 +1010,3 @@ function shareLinkedIn() {
 </script>
 </body>
 </html>
-
