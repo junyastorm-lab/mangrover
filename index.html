@@ -157,6 +157,34 @@
 
   #profileMap{height:360px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
 
+  /* ADD SITE MODAL */
+  .add-site-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;display:none;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
+  .add-site-overlay.show{display:flex}
+  .add-site-card{background:#0f172a;border:1px solid #1e293b;border-radius:18px;padding:24px;width:100%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,.4);position:relative;margin:auto}
+  .add-site-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(16,185,129,.1);color:#34d399;border:1px solid rgba(16,185,129,.2);font-size:10px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:.06em;padding:3px 10px;border-radius:20px;margin-bottom:8px}
+  .add-site-title{font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+  .add-site-sub{font-size:12px;color:#64748b;margin-bottom:16px;line-height:1.5}
+  .coords-bar{background:#020617;border:1px solid #1e293b;border-radius:10px;padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+  .coords-bar-item label{display:flex;align-items:center;gap:4px;font-size:10px;color:#475569;font-family:'DM Mono',monospace;margin-bottom:3px}
+  .coords-bar-item span{display:block;font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:#e2e8f0}
+  .dark-form-group{margin-bottom:11px}
+  .dark-form-group label{display:block;font-size:11px;font-weight:500;color:#94a3b8;margin-bottom:5px}
+  .dark-input{width:100%;background:#020617;border:1px solid #1e293b;border-radius:10px;padding:8px 12px;font-size:12px;font-family:'Inter',sans-serif;color:#e2e8f0;outline:none;transition:border-color .15s}
+  .dark-input:focus{border-color:#10b981}
+  .dark-input::placeholder{color:#334155}
+  .dark-select{width:100%;background:#020617;border:1px solid #1e293b;border-radius:10px;padding:8px 12px;font-size:12px;font-family:'Inter',sans-serif;color:#e2e8f0;outline:none}
+  .dark-select:focus{border-color:#10b981}
+  .dark-2col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .dark-error{background:rgba(127,29,29,.3);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:9px 12px;font-size:12px;color:#fca5a5;display:flex;align-items:center;gap:6px;margin-bottom:10px}
+  .add-site-close{position:absolute;top:14px;right:14px;background:none;border:none;color:#475569;cursor:pointer;padding:4px;border-radius:8px;line-height:1;font-size:18px;transition:color .15s}
+  .add-site-close:hover{color:#94a3b8;background:#1e293b}
+  .btn-add-site{flex:1;background:linear-gradient(135deg,#10b981,#0d9488);color:#022c22;font-size:12px;font-weight:700;font-family:'Inter',sans-serif;border:none;border-radius:8px;padding:9px 14px;cursor:pointer;transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:5px}
+  .btn-add-site:hover{opacity:.9}
+  .btn-cancel-dark{flex:1;background:#1e293b;border:none;color:#94a3b8;font-size:12px;font-weight:600;font-family:'Inter',sans-serif;border-radius:8px;padding:9px 14px;cursor:pointer;transition:background .15s}
+  .btn-cancel-dark:hover{background:#334155}
+  .map-click-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(10,84,71,.92);color:#fff;font-size:12px;padding:7px 16px;border-radius:20px;pointer-events:none;white-space:nowrap;z-index:500;opacity:0;transition:opacity .4s}
+  .map-click-hint.visible{opacity:1}
+
   @media(max-width:640px){
     .stat-grid{grid-template-columns:1fr 1fr}
     .admin-grid{grid-template-columns:1fr}
@@ -166,6 +194,7 @@
     .nav-tabs{display:none}
     .charts-grid{grid-template-columns:1fr}
     .public-hero-title{font-size:26px}
+    .dark-2col{grid-template-columns:1fr}
   }
 </style>
 </head>
@@ -201,6 +230,82 @@
     <button class="btn-primary" id="loginBtn" onclick="doLogin()">
       <span id="loginBtnText">Sign in →</span>
     </button>
+  </div>
+</div>
+
+<!-- ADD SITE MODAL -->
+<div class="add-site-overlay" id="addSiteModal">
+  <div class="add-site-card">
+    <button class="add-site-close" onclick="closeAddSite()">×</button>
+    <div class="add-site-badge">✦ 新海域プランテーション</div>
+    <div class="add-site-title">新規マングローブ植樹エリアの登録</div>
+    <div class="add-site-sub">指定されたGPS沿岸に新しいプランテーションを設定します。必要情報を入力し登録してください。</div>
+    <div id="addSiteError" class="dark-error" style="display:none">
+      <span style="font-size:15px">⚠</span><span id="addSiteErrorMsg"></span>
+    </div>
+    <div class="coords-bar">
+      <div class="coords-bar-item">
+        <label>📍 ターゲット緯度 (Lat)</label>
+        <span id="siteLatDisplay">—</span>
+      </div>
+      <div class="coords-bar-item">
+        <label>📍 ターゲット経度 (Lon)</label>
+        <span id="siteLngDisplay">—</span>
+      </div>
+    </div>
+    <div class="dark-form-group">
+      <label>プログラム・プロジェクト名称</label>
+      <input class="dark-input" id="siteName" placeholder="例: ボルネオ島干潟防波グリーンシールド">
+    </div>
+    <div class="dark-2col">
+      <div class="dark-form-group">
+        <label>国名</label>
+        <input class="dark-input" id="siteCountry" placeholder="例: インドネシア">
+      </div>
+      <div class="dark-form-group">
+        <label>地域・州・港名</label>
+        <input class="dark-input" id="siteRegion" placeholder="例: 東カリマンタン州沿岸">
+      </div>
+    </div>
+    <div class="dark-2col">
+      <div class="dark-form-group">
+        <label>導入するマングローブ樹種</label>
+        <select class="dark-select" id="siteSpecies">
+          <option value="フタバヒルギ (Rhizophora apiculata)">フタバヒルギ (Rhizophora apiculata) — 汽水に強い・東南アジア定番</option>
+          <option value="オオバヒルギ (Rhizophora mucronata)">オオバヒルギ (Rhizophora mucronata) — 太い支柱根・アフリカ沿岸</option>
+          <option value="ヒルギダマシ (Avicennia marina)">ヒルギダマシ (Avicennia marina) — 強靭な塩分排出能力・砂地向き</option>
+          <option value="オヒルギ (Bruguiera gymnorhiza)">オヒルギ (Bruguiera gymnorhiza) — 赤い膝根・内陸寄り</option>
+          <option value="スンドリマングローブ (Heritiera fomes)">スンドリマングローブ (Heritiera fomes) — シュンドルボンの象徴</option>
+          <option value="ヤエヤマヒルギ (Rhizophora stylosa)">ヤエヤマヒルギ (Rhizophora stylosa) — 潮間帯中央部・沖縄等</option>
+        </select>
+      </div>
+      <div class="dark-form-group">
+        <label>植樹実施日</label>
+        <input class="dark-input" id="sitePlantDate" type="date">
+      </div>
+    </div>
+    <div class="dark-2col">
+      <div class="dark-form-group">
+        <label>植樹初期本数 (本)</label>
+        <input class="dark-input" id="siteTreeCount" type="number" placeholder="10000" min="100" max="200000" step="500" style="font-family:'DM Mono',monospace">
+      </div>
+      <div class="dark-form-group">
+        <label>苗木の初期樹高 (cm)</label>
+        <input class="dark-input" id="siteInitHeight" type="number" placeholder="15" min="5" max="150" style="font-family:'DM Mono',monospace">
+      </div>
+    </div>
+    <div class="dark-form-group">
+      <label>管理責任機関 / 基金スポンサー</label>
+      <input class="dark-input" id="siteSponsor" placeholder="例: 世界自然保護推進コンソーシアム / 出資企業名">
+    </div>
+    <div class="dark-form-group">
+      <label>プログラムの説明・意義 (任意)</label>
+      <textarea class="dark-input" id="siteDescription" rows="3" placeholder="例: 地元コミュニティの水産養殖池跡地を復元し、堤防を補強。" style="resize:none"></textarea>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:6px">
+      <button class="btn-cancel-dark" onclick="closeAddSite()">キャンセル</button>
+      <button class="btn-add-site" id="addSiteBtn" onclick="submitNewSite()">🌿 植樹プログラムを登録</button>
+    </div>
   </div>
 </div>
 
@@ -243,8 +348,14 @@
     </div>
 
     <div class="section-card">
-      <div class="section-title">🗺️ Planting Map</div>
-      <div id="publicMap"></div>
+      <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+        🗺️ Planting Map
+        <span id="mapAddHintLabel" style="display:none;font-size:11px;color:var(--green-mid);font-weight:400;font-style:italic">地図をクリックして植樹地点を追加</span>
+      </div>
+      <div style="position:relative">
+        <div id="publicMap"></div>
+        <div class="map-click-hint" id="mapClickHint">🌿 ここをクリックして植樹地点を追加</div>
+      </div>
       <div class="map-legend">
         <div class="map-legend-item"><div class="legend-dot" style="background:#1D9E75"></div>Planting site (size = tree count)</div>
         <div class="map-legend-item" style="color:var(--text-3);font-style:italic">Click a marker for details</div>
@@ -401,6 +512,109 @@ function parseGPS(str) {
   return [lat, lng];
 }
 
+// ── COUNTRY DETECTION ─────────────────────────────────────
+function detectCountryRegion(lat, lng) {
+  if (lng > 95 && lng < 141 && lat > -11 && lat < 6)
+    return { country: 'インドネシア', region: 'カリマンタン沿岸' };
+  if (lng > 30 && lng < 52 && lat > -26 && lat < -11)
+    return { country: 'マダガスカル', region: '西海岸干潟' };
+  if (lng > 87 && lng < 93 && lat > 20 && lat < 26)
+    return { country: 'バングラデシュ', region: 'シュンドルボン汽水帯' };
+  if (lng > -82 && lng < -34 && lat > -34 && lat < 12)
+    return { country: 'ブラジル', region: 'アマゾン・デルタ海域' };
+  if (lng > 102 && lng < 109 && lat > 8 && lat < 23)
+    return { country: 'ベトナム', region: 'メコン川デルタ南部' };
+  if (lng > 113 && lng < 154 && lat > -39 && lat < -10)
+    return { country: 'オーストラリア', region: 'クイーンズランド熱帯海岸' };
+  if (lat > 24 && lat < 28 && lng > 120 && lng < 130)
+    return { country: '日本', region: '沖縄県西表島' };
+  if (lat > 9 && lat < 18 && lng > 95 && lng < 106)
+    return { country: 'ミャンマー', region: 'イラワジ・デルタ沿岸' };
+  if (lat > -5 && lat < 10 && lng > -20 && lng < 20)
+    return { country: '西アフリカ', region: 'マングローブ海岸' };
+  if (lat > 10 && lat < 28 && lng > 70 && lng < 87)
+    return { country: 'インド', region: 'スンダルバンス / 西岸' };
+  if (lat > 5 && lat < 24 && lng > 100 && lng < 120)
+    return { country: 'フィリピン', region: 'ミンダナオ群島' };
+  if (lat > 0 && lat < 7 && lng > 99 && lng < 115)
+    return { country: 'マレーシア', region: 'ボルネオ島沿岸' };
+  if (lat > 5 && lat < 22 && lng > 98 && lng < 106)
+    return { country: 'タイ', region: '南部沿岸' };
+  if (lat > 10 && lat < 15 && lng > 102 && lng < 107)
+    return { country: 'カンボジア', region: 'コッコン州沿岸' };
+  return { country: '', region: '' };
+}
+
+// ── ADD SITE MODAL ─────────────────────────────────────────
+let _pendingLat = null, _pendingLng = null;
+
+function openAddSite(lat, lng) {
+  _pendingLat = lat; _pendingLng = lng;
+  document.getElementById('siteLatDisplay').textContent = lat.toFixed(5) + '°';
+  document.getElementById('siteLngDisplay').textContent = lng.toFixed(5) + '°';
+  const auto = detectCountryRegion(lat, lng);
+  document.getElementById('siteCountry').value = auto.country;
+  document.getElementById('siteRegion').value = auto.region;
+  document.getElementById('siteName').value = '';
+  document.getElementById('siteSponsor').value = '';
+  document.getElementById('siteDescription').value = '';
+  document.getElementById('siteTreeCount').value = 10000;
+  document.getElementById('siteInitHeight').value = 15;
+  document.getElementById('sitePlantDate').value = new Date().toISOString().split('T')[0];
+  document.getElementById('addSiteError').style.display = 'none';
+  document.getElementById('addSiteModal').classList.add('show');
+}
+
+function closeAddSite() {
+  document.getElementById('addSiteModal').classList.remove('show');
+}
+
+async function submitNewSite() {
+  const name = document.getElementById('siteName').value.trim();
+  const country = document.getElementById('siteCountry').value.trim();
+  const region = document.getElementById('siteRegion').value.trim();
+  const species = document.getElementById('siteSpecies').value;
+  const treeCount = parseInt(document.getElementById('siteTreeCount').value);
+  const initHeight = parseInt(document.getElementById('siteInitHeight').value);
+  const plantDate = document.getElementById('sitePlantDate').value;
+  const sponsor = document.getElementById('siteSponsor').value.trim();
+  const description = document.getElementById('siteDescription').value.trim();
+
+  const showErr = msg => {
+    document.getElementById('addSiteErrorMsg').textContent = msg;
+    document.getElementById('addSiteError').style.display = 'flex';
+  };
+  if (!name) return showErr('プロジェクト名を入力してください。');
+  if (!country) return showErr('国名を入力してください。');
+  if (!region) return showErr('地域・州名を入力してください。');
+  if (!treeCount || treeCount < 1) return showErr('植樹本数は1本以上で指定してください。');
+  if (!initHeight || initHeight < 1) return showErr('苗木の初期樹高を入力してください。');
+  if (!sponsor) return showErr('責任機関 / スポンサー名を入力してください。');
+
+  const btn = document.getElementById('addSiteBtn');
+  btn.disabled = true; btn.textContent = '登録中...';
+
+  const gpsStr = `${Math.abs(_pendingLat).toFixed(5)}°${_pendingLat>=0?'N':'S'}, ${Math.abs(_pendingLng).toFixed(5)}°${_pendingLng>=0?'E':'W'}`;
+  const noteText = description || `${country}の${region}において、${species}を${treeCount.toLocaleString()}本植樹。管理: ${sponsor}。初期樹高: ${initHeight}cm。`;
+
+  const { error } = await sb.from('planting_logs').insert({
+    partner_email: currentUser.email,
+    planted_date: plantDate,
+    trees_count: treeCount,
+    gps: gpsStr,
+    location_name: `${name} (${region}, ${country})`,
+    field_note: noteText
+  });
+
+  btn.disabled = false; btn.textContent = '🌿 植樹プログラムを登録';
+  if (error) return showErr('保存エラー: ' + error.message);
+
+  closeAddSite();
+  showToast(`✅ ${name} を登録しました！ 🌿 ${treeCount.toLocaleString()} 本`);
+  await loadAllLogs();
+  loadPublicDashboard();
+}
+
 // ── MODAL ──────────────────────────────────────────────────
 function openLoginModal() {
   document.getElementById('loginModal').classList.add('show');
@@ -523,6 +737,17 @@ function initPublicMap() {
   });
   if (points.length > 0) _leafletPublic.fitBounds(L.latLngBounds(points).pad(0.4));
   else _leafletPublic.setView([11.55, 104.92], 6);
+
+  // Admin: クリックで新規植樹地点追加
+  if (currentRole === 'admin') {
+    const hint = document.getElementById('mapClickHint');
+    const hintLabel = document.getElementById('mapAddHintLabel');
+    if (hintLabel) hintLabel.style.display = 'inline';
+    if (hint) { hint.classList.add('visible'); setTimeout(() => hint.classList.remove('visible'), 3500); }
+    _leafletPublic.on('click', e => {
+      openAddSite(parseFloat(e.latlng.lat.toFixed(5)), parseFloat(e.latlng.lng.toFixed(5)));
+    });
+  }
 }
 
 function renderPublicLog() {
