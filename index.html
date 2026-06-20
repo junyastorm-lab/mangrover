@@ -158,30 +158,48 @@
   #profileMap{height:360px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border)}
 
   /* ADD SITE MODAL */
-  .add-site-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:300;display:none;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
+  .add-site-overlay{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300;display:none;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
   .add-site-overlay.show{display:flex}
-  .add-site-card{background:#0f172a;border:1px solid #1e293b;border-radius:18px;padding:24px;width:100%;max-width:560px;box-shadow:0 20px 60px rgba(0,0,0,.4);position:relative;margin:auto}
-  .add-site-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(16,185,129,.1);color:#34d399;border:1px solid rgba(16,185,129,.2);font-size:10px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:.06em;padding:3px 10px;border-radius:20px;margin-bottom:8px}
-  .add-site-title{font-size:15px;font-weight:700;color:#f1f5f9;margin-bottom:4px}
-  .add-site-sub{font-size:12px;color:#64748b;margin-bottom:16px;line-height:1.5}
-  .coords-bar{background:#020617;border:1px solid #1e293b;border-radius:10px;padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
-  .coords-bar-item label{display:flex;align-items:center;gap:4px;font-size:10px;color:#475569;font-family:'DM Mono',monospace;margin-bottom:3px}
-  .coords-bar-item span{display:block;font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:#e2e8f0}
-  .dark-form-group{margin-bottom:11px}
-  .dark-form-group label{display:block;font-size:11px;font-weight:500;color:#94a3b8;margin-bottom:5px}
-  .dark-input{width:100%;background:#020617;border:1px solid #1e293b;border-radius:10px;padding:8px 12px;font-size:12px;font-family:'Inter',sans-serif;color:#e2e8f0;outline:none;transition:border-color .15s}
-  .dark-input:focus{border-color:#10b981}
-  .dark-input::placeholder{color:#334155}
-  .dark-select{width:100%;background:#020617;border:1px solid #1e293b;border-radius:10px;padding:8px 12px;font-size:12px;font-family:'Inter',sans-serif;color:#e2e8f0;outline:none}
-  .dark-select:focus{border-color:#10b981}
-  .dark-2col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .dark-error{background:rgba(127,29,29,.3);border:1px solid rgba(239,68,68,.25);border-radius:10px;padding:9px 12px;font-size:12px;color:#fca5a5;display:flex;align-items:center;gap:6px;margin-bottom:10px}
-  .add-site-close{position:absolute;top:14px;right:14px;background:none;border:none;color:#475569;cursor:pointer;padding:4px;border-radius:8px;line-height:1;font-size:18px;transition:color .15s}
+  .add-site-card{background:#0f172a;border:1px solid #1e293b;border-radius:20px;padding:20px;width:100%;max-width:520px;box-shadow:0 25px 60px rgba(0,0,0,.5);position:relative;margin:auto}
+
+  /* badge with pulse dot */
+  .add-site-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(16,185,129,.12);color:#34d399;border:1px solid rgba(16,185,129,.22);font-size:10px;font-weight:700;font-family:'DM Mono',monospace;letter-spacing:.05em;padding:3px 10px 3px 8px;border-radius:20px;margin-bottom:8px}
+  .badge-dot{width:7px;height:7px;border-radius:50%;background:#34d399;animation:pulse-dot 1.4s ease-in-out infinite}
+  @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.75)}}
+
+  .add-site-title{font-size:14px;font-weight:700;color:#f1f5f9;margin-bottom:4px}
+  .add-site-sub{font-size:11.5px;color:#64748b;margin-bottom:14px;line-height:1.55}
+
+  /* coords bar — bg-slate-950 */
+  .coords-bar{background:#020617;border:1px solid rgba(30,41,59,.9);border-radius:12px;padding:10px 14px;display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:13px}
+  .coords-bar-item .cb-label{display:flex;align-items:center;gap:4px;font-size:10px;color:#475569;font-family:'DM Mono',monospace;margin-bottom:3px}
+  .coords-bar-item .cb-val{display:block;font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:#e2e8f0}
+
+  /* form rows */
+  .dfg{margin-bottom:10px}
+  .dfg label{display:block;font-size:11px;font-weight:500;color:#94a3b8;margin-bottom:4px}
+  .di{width:100%;background:#020617;border:1px solid #1e293b;border-radius:10px;padding:7px 11px;font-size:12px;font-family:'Inter',sans-serif;color:#e2e8f0;outline:none;transition:border-color .15s;box-sizing:border-box}
+  .di:focus{border-color:#10b981}
+  .di::placeholder{color:#1e3a52}
+  textarea.di{resize:none;height:60px}
+  .d2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+  /* error */
+  .dark-error{background:rgba(69,10,10,.4);border:1px solid rgba(239,68,68,.22);border-radius:10px;padding:9px 12px;font-size:12px;color:#fca5a5;display:flex;align-items:flex-start;gap:7px;margin-bottom:10px}
+  .dark-error .err-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+
+  /* close btn */
+  .add-site-close{position:absolute;top:14px;right:14px;background:none;border:none;color:#475569;cursor:pointer;width:26px;height:26px;border-radius:7px;font-size:17px;line-height:26px;text-align:center;transition:all .15s}
   .add-site-close:hover{color:#94a3b8;background:#1e293b}
-  .btn-add-site{flex:1;background:linear-gradient(135deg,#10b981,#0d9488);color:#022c22;font-size:12px;font-weight:700;font-family:'Inter',sans-serif;border:none;border-radius:8px;padding:9px 14px;cursor:pointer;transition:opacity .15s;display:flex;align-items:center;justify-content:center;gap:5px}
-  .btn-add-site:hover{opacity:.9}
+
+  /* submit gradient button */
+  .btn-add-site{flex:1;background:linear-gradient(135deg,#10b981,#0d9488);color:#022c22;font-size:12px;font-weight:700;font-family:'Inter',sans-serif;border:none;border-radius:8px;padding:9px 14px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:filter .15s,transform .1s}
+  .btn-add-site:hover{filter:brightness(1.08)}
+  .btn-add-site:active{transform:scale(.97)}
+  .btn-add-site:disabled{opacity:.5;cursor:not-allowed}
   .btn-cancel-dark{flex:1;background:#1e293b;border:none;color:#94a3b8;font-size:12px;font-weight:600;font-family:'Inter',sans-serif;border-radius:8px;padding:9px 14px;cursor:pointer;transition:background .15s}
   .btn-cancel-dark:hover{background:#334155}
+
   .map-click-hint{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);background:rgba(10,84,71,.92);color:#fff;font-size:12px;padding:7px 16px;border-radius:20px;pointer-events:none;white-space:nowrap;z-index:500;opacity:0;transition:opacity .4s}
   .map-click-hint.visible{opacity:1}
 
@@ -236,73 +254,97 @@
 <!-- ADD SITE MODAL -->
 <div class="add-site-overlay" id="addSiteModal">
   <div class="add-site-card">
-    <button class="add-site-close" onclick="closeAddSite()">×</button>
-    <div class="add-site-badge">✦ 新海域プランテーション</div>
-    <div class="add-site-title">新規マングローブ植樹エリアの登録</div>
-    <div class="add-site-sub">指定されたGPS沿岸に新しいプランテーションを設定します。必要情報を入力し登録してください。</div>
-    <div id="addSiteError" class="dark-error" style="display:none">
-      <span style="font-size:15px">⚠</span><span id="addSiteErrorMsg"></span>
+    <button class="add-site-close" onclick="closeAddSite()" title="閉じる">×</button>
+
+    <!-- header -->
+    <div style="margin-bottom:14px">
+      <div class="add-site-badge">
+        <span class="badge-dot"></span>新海域プランテーション
+      </div>
+      <div class="add-site-title">新規マングローブ植樹エリアの開設</div>
+      <div class="add-site-sub">指定されたGPS沿岸に新しいプランテーションを設定します。必要情報を入力し登録してください。</div>
     </div>
+
+    <!-- error -->
+    <div id="addSiteError" class="dark-error" style="display:none">
+      <span class="err-icon">⚠</span><span id="addSiteErrorMsg"></span>
+    </div>
+
+    <!-- GPS coords -->
     <div class="coords-bar">
       <div class="coords-bar-item">
-        <label>📍 ターゲット緯度 (Lat)</label>
-        <span id="siteLatDisplay">—</span>
+        <div class="cb-label">⊕ ターゲット緯度 (Lat)</div>
+        <span class="cb-val" id="siteLatDisplay">—</span>
       </div>
       <div class="coords-bar-item">
-        <label>📍 ターゲット経度 (Lon)</label>
-        <span id="siteLngDisplay">—</span>
+        <div class="cb-label">⊕ ターゲット経度 (Lon)</div>
+        <span class="cb-val" id="siteLngDisplay">—</span>
       </div>
     </div>
-    <div class="dark-form-group">
+
+    <!-- project name -->
+    <div class="dfg">
       <label>プログラム・プロジェクト名称</label>
-      <input class="dark-input" id="siteName" placeholder="例: ボルネオ島干潟防波グリーンシールド">
+      <input class="di" id="siteName" type="text" placeholder="例: ボルネオ島干潟防波グリーンシールド">
     </div>
-    <div class="dark-2col">
-      <div class="dark-form-group">
+
+    <!-- country / region -->
+    <div class="d2">
+      <div class="dfg">
         <label>国名</label>
-        <input class="dark-input" id="siteCountry" placeholder="例: インドネシア">
+        <input class="di" id="siteCountry" type="text" placeholder="例: インドネシア">
       </div>
-      <div class="dark-form-group">
+      <div class="dfg">
         <label>地域・州・港名</label>
-        <input class="dark-input" id="siteRegion" placeholder="例: 東カリマンタン州沿岸">
+        <input class="di" id="siteRegion" type="text" placeholder="例: 東カリマンタン州沿岸">
       </div>
     </div>
-    <div class="dark-2col">
-      <div class="dark-form-group">
+
+    <!-- species / date -->
+    <div class="d2">
+      <div class="dfg">
         <label>導入するマングローブ樹種</label>
-        <select class="dark-select" id="siteSpecies">
+        <select class="di" id="siteSpecies" style="cursor:pointer">
           <option value="フタバヒルギ (Rhizophora apiculata)">フタバヒルギ (Rhizophora apiculata) — 汽水に強い・東南アジア定番</option>
-          <option value="オオバヒルギ (Rhizophora mucronata)">オオバヒルギ (Rhizophora mucronata) — 太い支柱根・アフリカ沿岸</option>
-          <option value="ヒルギダマシ (Avicennia marina)">ヒルギダマシ (Avicennia marina) — 強靭な塩分排出能力・砂地向き</option>
-          <option value="オヒルギ (Bruguiera gymnorhiza)">オヒルギ (Bruguiera gymnorhiza) — 赤い膝根・内陸寄り</option>
-          <option value="スンドリマングローブ (Heritiera fomes)">スンドリマングローブ (Heritiera fomes) — シュンドルボンの象徴</option>
-          <option value="ヤエヤマヒルギ (Rhizophora stylosa)">ヤエヤマヒルギ (Rhizophora stylosa) — 潮間帯中央部・沖縄等</option>
+          <option value="オオバヒルギ (Rhizophora mucronata)">オオバヒルギ (Rhizophora mucronata) — 太い支柱根・アフリカ沿岸に多し</option>
+          <option value="ヒルギダマシ (Avicennia marina)">ヒルギダマシ (Avicennia marina) — 極めて強靭な塩分排出能力・砂地向き</option>
+          <option value="オヒルギ (Bruguiera gymnorhiza)">オヒルギ (Bruguiera gymnorhiza) — 赤い膝根・比較的高部内陸寄り</option>
+          <option value="スンドリマングローブ (Heritiera fomes)">スンドリマングローブ (Heritiera fomes) — シュンドルボンの象徴・淡水濃度の高い泥地</option>
+          <option value="ヤエヤマヒルギ (Rhizophora stylosa)">ヤエヤマヒルギ (Rhizophora stylosa) — 潮間帯中央部・日本では沖縄等に分布</option>
         </select>
       </div>
-      <div class="dark-form-group">
+      <div class="dfg">
         <label>植樹実施日</label>
-        <input class="dark-input" id="sitePlantDate" type="date">
+        <input class="di" id="sitePlantDate" type="date">
       </div>
     </div>
-    <div class="dark-2col">
-      <div class="dark-form-group">
+
+    <!-- tree count / initial height -->
+    <div class="d2">
+      <div class="dfg">
         <label>植樹初期本数 (本)</label>
-        <input class="dark-input" id="siteTreeCount" type="number" placeholder="10000" min="100" max="200000" step="500" style="font-family:'DM Mono',monospace">
+        <input class="di" id="siteTreeCount" type="number" placeholder="10000" min="100" max="200000" step="500" style="font-family:'DM Mono',monospace">
       </div>
-      <div class="dark-form-group">
+      <div class="dfg">
         <label>苗木の初期樹高 (cm)</label>
-        <input class="dark-input" id="siteInitHeight" type="number" placeholder="15" min="5" max="150" style="font-family:'DM Mono',monospace">
+        <input class="di" id="siteInitHeight" type="number" placeholder="15" min="5" max="150" style="font-family:'DM Mono',monospace">
       </div>
     </div>
-    <div class="dark-form-group">
+
+    <!-- sponsor -->
+    <div class="dfg">
       <label>管理責任機関 / 基金スポンサー</label>
-      <input class="dark-input" id="siteSponsor" placeholder="例: 世界自然保護推進コンソーシアム / 出資企業名">
+      <input class="di" id="siteSponsor" type="text" placeholder="例: 世界自然保護推進コンソーシアム / 出資企業名">
     </div>
-    <div class="dark-form-group">
+
+    <!-- description -->
+    <div class="dfg">
       <label>プログラムの説明・意義 (任意)</label>
-      <textarea class="dark-input" id="siteDescription" rows="3" placeholder="例: 地元コミュニティの水産養殖池跡地を復元し、堤防を補強。" style="resize:none"></textarea>
+      <textarea class="di" id="siteDescription" placeholder="例: 地元コミュニティの水産養殖池跡地を復元し、堤防を補強。高波・台風からの地域防衛と持続可能なカニ養殖を共存させます。"></textarea>
     </div>
-    <div style="display:flex;gap:10px;margin-top:6px">
+
+    <!-- actions -->
+    <div style="display:flex;gap:10px;padding-top:8px">
       <button class="btn-cancel-dark" onclick="closeAddSite()">キャンセル</button>
       <button class="btn-add-site" id="addSiteBtn" onclick="submitNewSite()">🌿 植樹プログラムを登録</button>
     </div>
